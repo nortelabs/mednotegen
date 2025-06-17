@@ -1,18 +1,22 @@
 import os
-import openai
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 class LLMGenerator:
     def __init__(self, model="gpt-3.5-turbo"):
+        try:
+            import openai
+        except ImportError:
+            raise ImportError("openai package is required for LLM features. Install with 'uv pip install openai'.")
         if not OPENAI_API_KEY:
             raise ValueError("OPENAI_API_KEY environment variable not set.")
         openai.api_key = OPENAI_API_KEY
         self.model = model
+        self.openai = openai
 
     def generate_note(self, note_type, patient_info=None):
         prompt = self._build_prompt(note_type, patient_info)
-        response = openai.ChatCompletion.create(
+        response = self.openai.ChatCompletion.create(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=400
