@@ -6,19 +6,39 @@ try:
 except ImportError:
     HAS_HEALTHCARE = False
 
+import os
+
+def sample_from_file(filepath):
+    try:
+        with open(filepath, "r") as f:
+            items = [line.strip() for line in f if line.strip()]
+        if items:
+            return random.choice(items)
+    except Exception:
+        pass
+    return None
+
 class DoctorNoteTemplate:
     filename_prefix = "doctor_note"
     def generate(self, faker):
         name = faker.name()
         date = faker.date()
-        # Use faker_healthcare_system if available
-        if HAS_HEALTHCARE:
-            faker.add_provider(IndividualProvider)
-            diagnosis = faker.taxonomy()  # Taxonomy is a medical specialty or code
-            medication = faker.professional_degree_school()  # Not a medication, but example usage
-        else:
-            diagnosis = faker.sentence(nb_words=6)
-            medication = faker.word().capitalize()
+        # Prefer public data files if available
+        diagnosis = sample_from_file(os.path.join(os.path.dirname(__file__), "../data/diagnoses.txt"))
+        medication = sample_from_file(os.path.join(os.path.dirname(__file__), "../data/medications.txt"))
+        # Fallbacks
+        if not diagnosis:
+            if HAS_HEALTHCARE:
+                faker.add_provider(IndividualProvider)
+                diagnosis = faker.taxonomy()
+            else:
+                diagnosis = faker.sentence(nb_words=6)
+        if not medication:
+            if HAS_HEALTHCARE:
+                faker.add_provider(IndividualProvider)
+                medication = faker.professional_degree_school()
+            else:
+                medication = faker.word().capitalize()
         lines = [
             f"Doctor Note",
             f"Date: {date}",
