@@ -1,2 +1,6 @@
 sample_output/
 output_dir/
+synthea/
+synthea/output/
+*.csv
+synthea-with-dependencies.jar
