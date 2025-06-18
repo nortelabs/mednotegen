@@ -1,32 +1,25 @@
-import random
-
-try:
-    from provider_individual import IndividualProvider
-    HAS_HEALTHCARE = True
-except ImportError:
-    HAS_HEALTHCARE = False
-
-import os
-
-def sample_from_file(filepath):
-    try:
-        with open(filepath, "r") as f:
-            items = [line.strip() for line in f if line.strip()]
-        if items:
-            return random.choice(items)
-    except Exception:
-        pass
-    return None
+from .synthea_integration import get_random_patient_with_meds
 
 class DoctorNoteTemplate:
     filename_prefix = "doctor_note"
-    def generate(self, faker):
-        name = faker.name()
-        date = faker.date()
-        # Prefer public data files if available
-        diagnosis = sample_from_file(os.path.join(os.path.dirname(__file__), "../data/diagnoses.txt"))
-        medication = sample_from_file(os.path.join(os.path.dirname(__file__), "../data/medications.txt"))
-        # Fallbacks
+    def generate(self):
+        patient, meds = get_random_patient_with_meds()
+        name = f"{patient['FIRST']} {patient['LAST']}"
+        date = patient['BIRTHDATE']
+        diagnosis = patient.get('CONDITION', 'N/A')  # Synthea doesn't directly provide, may need conditions.csv
+        medication = ', '.join(meds['DESCRIPTION'].unique()) if not meds.empty else "None"
+        instructions = "Take medications as prescribed. Follow up as needed."
+        lines = [
+            f"Doctor Note",
+            f"Date: {date}",
+            f"Patient: {name}",
+            f"Diagnosis: {diagnosis}",
+            f"Prescribed Medication: {medication}",
+            "\nInstructions:",
+            instructions,
+        ]
+        return {"lines": lines}
+
         if not diagnosis:
             if HAS_HEALTHCARE:
                 faker.add_provider(IndividualProvider)
@@ -52,16 +45,14 @@ class DoctorNoteTemplate:
 
 class PatientReportTemplate:
     filename_prefix = "patient_report"
-    def generate(self, faker):
-        name = faker.name()
-        dob = faker.date_of_birth(minimum_age=18, maximum_age=90)
-        visit_date = faker.date_this_year()
-        if HAS_HEALTHCARE:
-            faker.add_provider(IndividualProvider)
-            diagnosis = faker.taxonomy()
-            summary = f"Diagnosis: {diagnosis}. " + faker.paragraph()
-        else:
-            summary = faker.paragraph()
+    def generate(self):
+        from .synthea_integration import get_random_patient_with_meds
+        patient, meds = get_random_patient_with_meds()
+        name = f"{patient['FIRST']} {patient['LAST']}"
+        dob = patient['BIRTHDATE']
+        # Synthea doesn't provide visit dates directly; use birthdate as placeholder or extend integration
+        visit_date = patient.get('DEATHDATE', 'N/A')  # or use another field if available
+        summary = f"Patient {name}, born {dob}. Medications: {', '.join(meds['DESCRIPTION'].unique()) if not meds.empty else 'None'}"
         lines = [
             f"Patient Report",
             f"Name: {name}",
@@ -71,3 +62,4 @@ class PatientReportTemplate:
             summary,
         ]
         return {"lines": lines}
+
