@@ -20,46 +20,40 @@ class DoctorNoteTemplate:
         ]
         return {"lines": lines}
 
-        if not diagnosis:
-            if HAS_HEALTHCARE:
-                faker.add_provider(IndividualProvider)
-                diagnosis = faker.taxonomy()
-            else:
-                diagnosis = faker.sentence(nb_words=6)
-        if not medication:
-            if HAS_HEALTHCARE:
-                faker.add_provider(IndividualProvider)
-                medication = faker.professional_degree_school()
-            else:
-                medication = faker.word().capitalize()
-        lines = [
-            f"Doctor Note",
-            f"Date: {date}",
-            f"Patient: {name}",
-            f"Diagnosis: {diagnosis}",
-            f"Prescribed Medication: {medication}",
-            "\nInstructions:",
-            faker.paragraph(),
-        ]
-        return {"lines": lines}
-
 class PatientReportTemplate:
     filename_prefix = "patient_report"
     def generate(self):
+        import re
         from .synthea_integration import get_random_patient_with_meds
         patient, meds = get_random_patient_with_meds()
-        name = f"{patient['FIRST']} {patient['LAST']}"
+        # Remove trailing digits from names
+        def strip_digits(s):
+            return re.sub(r'\d+$', '', str(s)).strip()
+        name = f"{strip_digits(patient['FIRST'])} {strip_digits(patient['LAST'])}"
         dob = patient['BIRTHDATE']
-        # Synthea doesn't provide visit dates directly; use birthdate as placeholder or extend integration
-        visit_date = patient.get('DEATHDATE', 'N/A')  # or use another field if available
-        summary = f"Patient {name}, born {dob}. Medications: {', '.join(meds['DESCRIPTION'].unique()) if not meds.empty else 'None'}"
+        # Try to use the most recent medication start date as visit date, else birthdate
+        visit_date = dob
+        if not meds.empty and 'START' in meds.columns:
+            valid_dates = meds['START'].dropna()
+            if not valid_dates.empty:
+                visit_date = valid_dates.max()
+        # Remove time from visit_date if present
+        import re
+        visit_date = re.sub(r'T.*', '', str(visit_date))
+        # Format medications as a line-separated list
+        if not meds.empty:
+            med_lines = [f"- {desc}" for desc in meds['DESCRIPTION'].unique() if desc and str(desc).strip()]
+        # Build lines with each medication as its own line
         lines = [
             f"Patient Report",
             f"Name: {name}",
             f"DOB: {dob}",
             f"Visit Date: {visit_date}",
-            "\nSummary:",
-            summary,
+            "",
+            "Summary:",
+            "Medications Prescribed:"
         ]
+        if med_lines:
+            lines.extend(med_lines)
         return {"lines": lines}
 

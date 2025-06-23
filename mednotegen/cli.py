@@ -10,9 +10,24 @@ def main():
     args = parser.parse_args()
 
     generator = NoteGenerator(args.type, use_llm=args.use_llm)
+    # Attempt to detect data source for reporting
+    data_source = 'Unknown'
+    if args.use_llm:
+        data_source = 'LLM'
+    else:
+        try:
+            from .synthea_integration import OUTPUT_CSV_DIR
+            import os
+            patients_csv = os.path.join(OUTPUT_CSV_DIR, 'patients.csv')
+            meds_csv = os.path.join(OUTPUT_CSV_DIR, 'medications.csv')
+            if os.path.exists(patients_csv) and os.path.exists(meds_csv):
+                data_source = 'Synthea CSV'
+            else:
+                data_source = 'Faker'
+        except Exception:
+            data_source = 'Faker'
     generator.generate_notes(args.count, args.output)
-    src = 'LLM' if args.use_llm else 'Faker/templates'
-    print(f"Generated {args.count} {args.type.replace('_', ' ')}(s) in {args.output}/ using {src}.")
+    print(f"Generated {args.count} {args.type.replace('_', ' ')}(s) in {args.output}/ using {data_source}.")
 
 if __name__ == "__main__":
     main()
