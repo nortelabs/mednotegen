@@ -24,36 +24,58 @@ class PatientReportTemplate:
     filename_prefix = "patient_report"
     def generate(self):
         import re
+        from datetime import datetime
         from .synthea_integration import get_random_patient_with_meds
         patient, meds = get_random_patient_with_meds()
-        # Remove trailing digits from names
+
+        # Helper to strip trailing digits from names
         def strip_digits(s):
             return re.sub(r'\d+$', '', str(s)).strip()
+
         name = f"{strip_digits(patient['FIRST'])} {strip_digits(patient['LAST'])}"
         dob = patient['BIRTHDATE']
-        # Try to use the most recent medication start date as visit date, else birthdate
+        sex = patient.get('GENDER', 'Unknown').capitalize()
+        # Calculate age if possible
+        try:
+            birth_year = int(dob[:4])
+            birth_month = int(dob[5:7])
+            birth_day = int(dob[8:10])
+            today = datetime.now()
+            age = today.year - birth_year - ((today.month, today.day) < (birth_month, birth_day))
+            age_str = f"{age} yrs"
+        except Exception:
+            age_str = "-"
+
+        # Visit date: most recent med start or today
         visit_date = dob
         if not meds.empty and 'START' in meds.columns:
             valid_dates = meds['START'].dropna()
             if not valid_dates.empty:
-                visit_date = valid_dates.max()
-        # Remove time from visit_date if present
-        import re
+                visit_date = str(valid_dates.max())
         visit_date = re.sub(r'T.*', '', str(visit_date))
+
         # Format medications as a line-separated list
-        if not meds.empty:
-            med_lines = [f"- {desc}" for desc in meds['DESCRIPTION'].unique() if desc and str(desc).strip()]
-        # Build lines with each medication as its own line
+        med_lines = []
+        if not meds.empty and 'DESCRIPTION' in meds.columns:
+            med_lines = [f"  - {desc}" for desc in meds['DESCRIPTION'].unique() if desc and str(desc).strip()]
+        else:
+            med_lines = ["  None"]
+
+        # Header block
         lines = [
-            f"Patient Report",
-            f"Name: {name}",
-            f"DOB: {dob}",
+            "="*70,
+            f"PATIENT VISIT SUMMARY",
+            "="*70,
+            f"Name: {name}    Age: {age_str}    Sex: {sex}    DOB: {dob}",
             f"Visit Date: {visit_date}",
+            "-"*70,
             "",
             "Summary:",
-            "Medications Prescribed:"
+            "",
+            "Medications Prescribed:",
         ]
-        if med_lines:
-            lines.extend(med_lines)
+        lines.extend(med_lines)
+        lines.append("\n" + "-"*70)
+        lines.append("End of Report")
+        lines.append("="*70)
         return {"lines": lines}
-
