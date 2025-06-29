@@ -3,8 +3,10 @@ from .pdf_utils import PDFGenerator
 from .llm_utils import LLMGenerator
 import os
 
+import yaml
+
 class NoteGenerator:
-    def __init__(self, note_type: str, use_llm: bool = False):
+    def __init__(self, note_type: str = "patient_report", use_llm: bool = False):
         self.note_type = note_type
         self.use_llm = use_llm
         if note_type == "doctor_note":
@@ -14,6 +16,16 @@ class NoteGenerator:
         else:
             raise ValueError("Invalid note type.")
         self.llm = LLMGenerator() if use_llm else None
+
+    @classmethod
+    def from_config(cls, config_path: str):
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
+        # Accept keys: note_type, use_llm, etc.
+        return cls(
+            note_type=config.get('note_type', 'patient_report'),
+            use_llm=config.get('use_llm', False),
+        )
 
     def generate_note_data(self):
         if self.use_llm and self.llm:

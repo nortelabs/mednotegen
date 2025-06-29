@@ -1,0 +1,19 @@
+# Example configuration for mednotegen
+note_type: patient_report
+count: 10
+output_dir: output_dir
+use_llm: false
+
+seed: 1234                   # Random seed for reproducibility
+reference_date: "20250628"   # Reference date for data generation (YYYYMMDD)
+clinician_seed: 5678         # Optional: separate seed for clinician assignment
+gender: female               # male, female, or any
+min_age: 30                  # Minimum patient age
+max_age: 60                  # Maximum patient age
+state: Massachusetts         # Synthea state parameter
+city: Boston                 # Synthea city parameter
+modules:                     # List of Synthea modules to include (optional)
+  - cardiovascular-disease
+  - diabetes
+local_config: custom_synthea.properties  # Custom Synthea config file
+local_modules: ./synthea_modules         # Directory for custom modules

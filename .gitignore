@@ -1,4 +1,7 @@
-
+# Python cache and bytecode
+__pycache__/
+*.pyc
+output_dir/
 synthea/
 synthea/output/
 *.csv
