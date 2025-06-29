@@ -3,10 +3,10 @@ from .synthea_integration import get_random_patient_with_meds
 class DoctorNoteTemplate:
     filename_prefix = "doctor_note"
     def generate(self):
-        patient, meds = get_random_patient_with_meds()
+        patient, meds, conditions = get_random_patient_with_meds()
         name = f"{patient['FIRST']} {patient['LAST']}"
         date = patient['BIRTHDATE']
-        diagnosis = patient.get('CONDITION', 'N/A')  # Synthea doesn't directly provide, may need conditions.csv
+        diagnosis = conditions.get('DESCRIPTION', 'N/A')
         medication = ', '.join(meds['DESCRIPTION'].unique()) if not meds.empty else "None"
         instructions = "Take medications as prescribed. Follow up as needed."
         lines = [
@@ -26,7 +26,7 @@ class PatientReportTemplate:
         import re
         from datetime import datetime, date
         from .synthea_integration import get_random_patient_with_meds
-        patient, meds = get_random_patient_with_meds()
+        patient, meds, conditions = get_random_patient_with_meds()
 
         # Helper to strip trailing digits from names
         def strip_digits(s):
@@ -93,7 +93,15 @@ class PatientReportTemplate:
             ])]
         allergy_section = '\n'.join([f"{a}" for a in allergies])
 
-        # Medications (limit to 5)
+        import pandas as pd
+        def safe_fmt(val):
+            if isinstance(val, str):
+                return val[:10]
+            if pd.isna(val):
+                return ''
+            return str(val)[:10]
+
+        # Medications (limit to 5, and show which condition each is for if available)
         med_lines = []
         if not meds.empty and 'DESCRIPTION' in meds.columns:
             for _, row in meds.iterrows():
@@ -103,35 +111,37 @@ class PatientReportTemplate:
                 status = row.get('STOP', '')
                 med = row.get('DESCRIPTION', '')
                 reason = row.get('REASONDESCRIPTION', '')
-                start_fmt = start[:10] if start else ''
+                start_fmt = safe_fmt(start)
                 status_str = '[CURRENT]' if not status or pd.isna(status) else '[STOPPED]'
                 reason_str = f" for {reason}" if reason else ''
                 med_lines.append(f"{start_fmt} {status_str} : {med}{reason_str}")
         if not med_lines:
             med_lines = [
-                f"{date.today()} [CURRENT] : Acetaminophen 325 MG Oral Tablet for Headache"
+                f"{date.today()} [CURRENT] : No medications prescribed"
             ]
         med_section = '\n'.join(med_lines)
 
-        # Conditions
-        conditions = patient.get('CONDITIONS', [])
-        if isinstance(conditions, str):
-            conditions = [conditions] if conditions else []
+        # Conditions (use patient_conditions DataFrame, filter out non-clinical entries)
         cond_lines = []
-        for cond in conditions:
-            if isinstance(cond, dict):
+        non_conditions = [
+            "Received higher education", "Completed high school", "Completed college", "Graduated", "Education", "Employed", "Unemployed", "Student", "Retired", "Homemaker", "Military service"
+        ]
+        filtered_conditions = conditions.copy()
+        if not filtered_conditions.empty and 'DESCRIPTION' in filtered_conditions.columns:
+            mask = ~filtered_conditions['DESCRIPTION'].str.contains('|'.join(non_conditions), case=False, na=False)
+            filtered_conditions = filtered_conditions[mask]
+        if not filtered_conditions.empty:
+            for _, cond in filtered_conditions.iterrows():
                 start = cond.get('START', '')
                 stop = cond.get('STOP', '')
                 desc = cond.get('DESCRIPTION', '')
                 reason = cond.get('REASONDESCRIPTION', '')
-                start_fmt = start[:10] if start else ''
-                stop_fmt = stop[:10] if stop else ''
+                start_fmt = safe_fmt(start)
+                stop_fmt = safe_fmt(stop)
                 cond_lines.append(f"{start_fmt} - {stop_fmt:<11}: {desc}{' for ' + reason if reason else ''}")
-            else:
-                cond_lines.append(str(cond))
         if not cond_lines:
             cond_lines = [
-                f"{date.today()} -            : Hypertension"
+                f"{date.today()} -            : No chronic conditions found"
             ]
         cond_section = '\n'.join(cond_lines)
 
@@ -218,104 +228,62 @@ class PatientReportTemplate:
             ]
         enc_section = '\n'.join(enc_lines)
 
-        # Header block
+        # Header block (demographics)
         lines = [
-            f"{name}",
-            "="*18,
-            f"Race:           {race}",
-            f"Ethnicity:      {ethnicity}",
+            f"PATIENT REPORT",
+            "="*70,
+            f"Name:           {name}",
+            f"Date of Birth:  {dob}",
             f"Gender:         {sex}",
             f"Age:            {age_str}",
-            f"Birth Date:     {dob}",
+            f"Race:           {race}",
+            f"Ethnicity:      {ethnicity}",
             f"Marital Status: {patient.get('MARITAL', 'Unknown')}",
-            "-"*80,
-            f"ALLERGIES: {', '.join(allergies)}",
-            "-"*80,
-            "MEDICATIONS:",
-            med_section,
-            "-"*80,
-            "CONDITIONS:",
-            cond_section,
-            "-"*80,
-            "CARE PLANS:",
-            care_section,
-            "-"*80,
-            "OBSERVATIONS:",
+            "-"*70,
         ]
-        # Always include these randomized key observations first
-        lines.append(f"{today_str} : Body Weight                              {body_weight}")
-        lines.append(f"{today_str} : Body Height                              {body_height}")
-        lines.append(f"{today_str} : Body Mass Index                          {body_bmi}")
-        lines.append(f"{today_str} : Systolic Blood Pressure                  {systolic_bp} mmHg")
-        lines.append(f"{today_str} : Diastolic Blood Pressure                 {diastolic_bp} mmHg")
-        # Add the rest of the observations (excluding the above)
-        for obs in obs_lines:
-            if not any(x in obs for x in ["Body Weight", "Body Height", "Body Mass Index", "Systolic Blood Pressure", "Diastolic Blood Pressure"]):
-                lines.append(obs)
-        lines.extend([
-            "-"*80,
-            "PROCEDURES:",
-            proc_section,
-            "-"*80,
-            "ENCOUNTERS:",
-            enc_section,
-            "-"*80,
-        ])
-        lines.extend([f"  - {a}" for a in allergies])
+        # Allergies
+        lines.append("ALLERGIES:")
+        if allergies:
+            lines.extend([f"  - {a}" for a in allergies])
+        else:
+            lines.append("  None reported")
         lines.append("-"*70)
 
-        # Medications Prescribed section
-        lines.extend([
-            "\nMEDICATIONS PRESCRIBED",
-            "-"*70,
-        ])
-        lines.extend(med_lines)
+        # Encounters (chronological)
+        lines.append("ENCOUNTERS:")
         lines.append("-"*70)
-
-        # Conditions section
-        lines.extend([
-            "\nCONDITIONS",
-            "-"*70,
-        ])
-        lines.extend(cond_lines)
-        lines.append("-"*70)
-
-        # Care Plans section
-        lines.extend([
-            "\nCARE PLANS",
-            "-"*70,
-        ])
-        lines.extend(care_lines)
-        lines.append("-"*70)
-
-        # Observations section
-        lines.extend([
-            "\nOBSERVATIONS",
-            "-"*70,
-        ])
-        lines.extend(obs_lines)
-        lines.append("-"*70)
-
-        # Procedures section
-        lines.extend([
-            "\nPROCEDURES",
-            "-"*70,
-        ])
-        lines.extend(proc_lines)
-        lines.append("-"*70)
-
-        # Encounters section
-        lines.extend([
-            "\nENCOUNTERS",
-            "-"*70,
-        ])
         lines.extend(enc_lines)
         lines.append("-"*70)
 
-        # Footer block
-        lines.extend([
-            "\nEND OF REPORT",
-            "="*70,
-        ])
+        # Conditions (limit to 4)
+        lines.append("CONDITIONS:")
+        lines.append("-"*70)
+        if cond_lines:
+            lines.extend(cond_lines[:4])
+        else:
+            lines.append("  None reported")
+        lines.append("-"*70)
+
+        # Medications
+        lines.append("MEDICATIONS:")
+        lines.append("-"*70)
+        lines.extend(med_lines)
+        lines.append("-"*70)
+
+        # Procedures
+        lines.append("PROCEDURES:")
+        lines.append("-"*70)
+        lines.extend(proc_lines)
+        lines.append("-"*70)
+
+        # Observations
+        lines.append("OBSERVATIONS:")
+        lines.append("-"*70)
+        lines.extend(obs_lines)
+        lines.append("-"*70)
+
+        # Footer
+        lines.append("END OF REPORT")
+        lines.append("="*70)
 
         return {"lines": lines}

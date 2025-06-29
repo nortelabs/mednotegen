@@ -23,19 +23,22 @@ def load_synthea_patients():
     """Load Synthea-generated patient and medication data as pandas DataFrames. If missing, auto-generate with Synthea."""
     patients_csv = os.path.join(OUTPUT_CSV_DIR, 'patients.csv')
     medications_csv = os.path.join(OUTPUT_CSV_DIR, 'medications.csv')
-    if not os.path.exists(patients_csv) or not os.path.exists(medications_csv):
+    conditions_csv = os.path.join(OUTPUT_CSV_DIR, 'conditions.csv')
+    if not os.path.exists(patients_csv) or not os.path.exists(medications_csv) or not os.path.exists(conditions_csv):
         print("Synthea patient data not found. Running Synthea to generate data...")
         run_synthea(num_patients=10, state="Massachusetts")
-    if not os.path.exists(patients_csv) or not os.path.exists(medications_csv):
+    if not os.path.exists(patients_csv) or not os.path.exists(medications_csv) or not os.path.exists(conditions_csv):
         raise FileNotFoundError("Synthea patient data could not be generated. Check Synthea installation.")
     patients = pd.read_csv(patients_csv)
     medications = pd.read_csv(medications_csv)
-    return patients, medications
+    conditions = pd.read_csv(conditions_csv)
+    return patients, medications, conditions
 
 def get_random_patient_with_meds():
     """Get a random patient and their medications from Synthea data."""
-    patients, medications = load_synthea_patients()
+    patients, medications, conditions = load_synthea_patients()
     patient = patients.sample(1).iloc[0]
     patient_id = patient['Id']
     patient_meds = medications[medications['PATIENT'] == patient_id]
-    return patient, patient_meds
+    patient_conditions = conditions[conditions['PATIENT'] == patient_id]
+    return patient, patient_meds, patient_conditions
