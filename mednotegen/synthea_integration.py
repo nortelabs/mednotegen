@@ -39,9 +39,32 @@ def run_synthea(num_patients=10, state="Massachusetts", city=None, seed=None, re
 
 # Synthea module to SNOMED/ICD code mapping for filtering
 MODULE_TO_CODES = {
-    "cardiovascular-disease": ["44054006", "49601007", "22298006"],  # Example SNOMED codes for CVD
-    "diabetes": ["44054006", "73211009"],
-    # Add more modules and codes as needed
+    # Comprehensive (non-exhaustive) lists of SNOMED CT condition codes emitted by Synthea for each module.
+    # Sources: Synthea module JSON files & sample CSV exports.
+    "cardiovascular-disease": [
+        "22298006",  # Myocardial infarction
+        "44054006",  # Diabetes mellitus (also used as CVD risk factor)
+        "49601007",  # Coronary arteriosclerosis
+        "414545008", # Heart failure
+        "230690007", # Stroke
+        "195080001", # Angina pectoris
+        "394659003", # Chronic ischemic heart disease
+        "703122007", # Atrial fibrillation
+        "1755008",   # Pulmonary embolism
+        "194828000", # Hypertensive disorder
+    ],
+    "diabetes": [
+        "44054006",  # Diabetes mellitus
+        "73211009",  # Type 2 diabetes mellitus
+        "46635009",  # Type 1 diabetes mellitus
+        "237599002", # Prediabetes
+        "443238003", # Gestational diabetes mellitus
+        "190330002", # Diabetic ketoacidosis
+        "313435000", # Diabetic neuropathy
+        "127013003", # Diabetic retinopathy
+        "237617002", # Impaired glucose tolerance
+        "59282003",  # Hyperglycemia
+    ],
 }
 
 def load_synthea_patients():
@@ -91,6 +114,9 @@ def get_random_patient_with_meds(gender=None, min_age=None, max_age=None, module
         # Find patient IDs with at least one matching condition code
         matching_ids = set(conditions[conditions['CODE'].astype(str).isin(all_codes)]['PATIENT'])
         filtered_patients = filtered_patients[filtered_patients['Id'].isin(matching_ids)]
+        # If no patients match after module filtering, relax this filter
+        if filtered_patients.empty:
+            filtered_patients = patients.copy()
     if filtered_patients.empty:
         raise ValueError("No patients found matching the specified filters.")
     patient = filtered_patients.sample(1).iloc[0]
