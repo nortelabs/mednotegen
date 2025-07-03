@@ -12,8 +12,5 @@ min_age: 30                  # Minimum patient age
 max_age: 60                  # Maximum patient age
 state: Massachusetts         # Synthea state parameter
 city: Boston                 # Synthea city parameter
-modules:                     # List of Synthea modules to include (optional)
-  - cardiovascular-disease
-  - diabetes
 local_config: custom_synthea.properties  # Custom Synthea config file
 local_modules: ./synthea_modules         # Directory for custom modules
