@@ -22,11 +22,21 @@ class DoctorNoteTemplate:
 
 class PatientReportTemplate:
     filename_prefix = "patient_report"
+    def __init__(self, gender=None, min_age=None, max_age=None, modules=None):
+        self.gender = gender
+        self.min_age = min_age
+        self.max_age = max_age
+        self.modules = modules
     def generate(self):
         import re
         from datetime import datetime, date
         from .synthea_integration import get_random_patient_with_meds
-        patient, meds, conditions = get_random_patient_with_meds()
+        patient, meds, conditions = get_random_patient_with_meds(
+            gender=self.gender,
+            min_age=self.min_age,
+            max_age=self.max_age,
+            modules=self.modules,
+        )
 
         # Helper to strip trailing digits from names
         def strip_digits(s):

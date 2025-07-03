@@ -67,7 +67,9 @@ def get_random_patient_with_meds(gender=None, min_age=None, max_age=None, module
     filtered_patients = patients.copy()
     # Gender filter
     if gender and gender.lower() in ("male", "female"):
-        filtered_patients = filtered_patients[filtered_patients['GENDER'].str.lower() == gender.lower()]
+        gender_map = {"female": ["female", "f"], "male": ["male", "m"]}
+        allowed = gender_map[gender.lower()]
+        filtered_patients = filtered_patients[filtered_patients['GENDER'].str.lower().isin(allowed)]
     # Age filter
     if min_age is not None or max_age is not None:
         today = datetime.today()

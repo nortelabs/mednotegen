@@ -20,7 +20,8 @@ def main():
         count = config.get('count', 1)
         output = config.get('output_dir', 'output')
         use_llm = config.get('use_llm', False)
-        generator = NoteGenerator(note_type, use_llm=use_llm)
+        # Instantiate generator using full config to pass through demographic filters
+        generator = NoteGenerator.from_config(args.config)
     else:
         note_type = args.type if args.type else 'patient_report'
         count = args.count if args.count else 1
