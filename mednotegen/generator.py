@@ -6,17 +6,18 @@ import os
 import yaml
 
 class NoteGenerator:
-    def __init__(self, note_type: str = "patient_report", use_llm: bool = False, gender=None, min_age=None, max_age=None, modules=None):
+    def __init__(self, note_type: str = "patient_report", use_llm: bool = False, gender=None, min_age=None, max_age=None, modules=None, reference_date=None):
         self.note_type = note_type
         self.use_llm = use_llm
         self.gender = gender
         self.min_age = min_age
         self.max_age = max_age
         self.modules = modules
+        self.reference_date = reference_date
         if note_type == "doctor_note":
             self.template = DoctorNoteTemplate()
         elif note_type == "patient_report":
-            self.template = PatientReportTemplate(gender=gender, min_age=min_age, max_age=max_age, modules=modules)
+            self.template = PatientReportTemplate(gender=gender, min_age=min_age, max_age=max_age, modules=modules, reference_date=reference_date)
         else:
             raise ValueError("Invalid note type.")
         self.llm = LLMGenerator() if use_llm else None
@@ -32,6 +33,7 @@ class NoteGenerator:
             min_age=config.get('min_age', None),
             max_age=config.get('max_age', None),
             modules=config.get('modules', None),
+            reference_date=config.get('reference_date', None),
         )
 
     def generate_note_data(self):

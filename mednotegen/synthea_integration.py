@@ -82,7 +82,7 @@ def load_synthea_patients():
     conditions = pd.read_csv(conditions_csv)
     return patients, medications, conditions
 
-def get_random_patient_with_meds(gender=None, min_age=None, max_age=None, modules=None):
+def get_random_patient_with_meds(gender=None, min_age=None, max_age=None, modules=None, reference_date=None):
     """Get a random patient and their medications from Synthea data, with demographic and module filtering."""
     import numpy as np
     from datetime import datetime
@@ -95,10 +95,17 @@ def get_random_patient_with_meds(gender=None, min_age=None, max_age=None, module
         filtered_patients = filtered_patients[filtered_patients['GENDER'].str.lower().isin(allowed)]
     # Age filter
     if min_age is not None or max_age is not None:
-        today = datetime.today()
+        # Use reference_date if provided, else today
+        if reference_date is not None:
+            try:
+                ref_dt = datetime.strptime(str(reference_date), "%Y%m%d")
+            except Exception:
+                ref_dt = datetime.today()
+        else:
+            ref_dt = datetime.today()
         def calc_age(dob):
             try:
-                return (today - datetime.strptime(str(dob)[:10], "%Y-%m-%d")).days // 365
+                return (ref_dt - datetime.strptime(str(dob)[:10], "%Y-%m-%d")).days // 365
             except Exception:
                 return np.nan
         filtered_patients['AGE'] = filtered_patients['BIRTHDATE'].apply(calc_age)
@@ -114,9 +121,33 @@ def get_random_patient_with_meds(gender=None, min_age=None, max_age=None, module
         # Find patient IDs with at least one matching condition code
         matching_ids = set(conditions[conditions['CODE'].astype(str).isin(all_codes)]['PATIENT'])
         filtered_patients = filtered_patients[filtered_patients['Id'].isin(matching_ids)]
-        # If no patients match after module filtering, relax this filter
+        # If no patients match after module filtering, relax this filter but keep gender and age filters
         if filtered_patients.empty:
             filtered_patients = patients.copy()
+            # re-apply gender filter
+            if gender and gender.lower() in ("male", "female"):
+                gender_map = {"female": ["female", "f"], "male": ["male", "m"]}
+                allowed = gender_map[gender.lower()]
+                filtered_patients = filtered_patients[filtered_patients['GENDER'].str.lower().isin(allowed)]
+            # re-apply age filter
+            if min_age is not None or max_age is not None:
+                if reference_date is not None:
+                    try:
+                        ref_dt = datetime.strptime(str(reference_date), "%Y%m%d")
+                    except Exception:
+                        ref_dt = datetime.today()
+                else:
+                    ref_dt = datetime.today()
+                def calc_age(dob):
+                    try:
+                        return (ref_dt - datetime.strptime(str(dob)[:10], "%Y-%m-%d")).days // 365
+                    except Exception:
+                        return np.nan
+                filtered_patients['AGE'] = filtered_patients['BIRTHDATE'].apply(calc_age)
+                if min_age is not None:
+                    filtered_patients = filtered_patients[filtered_patients['AGE'] >= min_age]
+                if max_age is not None:
+                    filtered_patients = filtered_patients[filtered_patients['AGE'] <= max_age]
     if filtered_patients.empty:
         raise ValueError("No patients found matching the specified filters.")
     patient = filtered_patients.sample(1).iloc[0]

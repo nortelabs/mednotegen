@@ -14,6 +14,8 @@ state: Massachusetts         # Synthea state parameter
 city: Boston
 modules:
   - cardiovascular-disease
-  - diabetes                 # Synthea city parameter
+  - diabetes      
+  - hypertension
+  - asthma          
 local_config: custom_synthea.properties  # Custom Synthea config file
 local_modules: ./synthea_modules         # Directory for custom modules

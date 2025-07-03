@@ -22,11 +22,12 @@ class DoctorNoteTemplate:
 
 class PatientReportTemplate:
     filename_prefix = "patient_report"
-    def __init__(self, gender=None, min_age=None, max_age=None, modules=None):
+    def __init__(self, gender=None, min_age=None, max_age=None, modules=None, reference_date=None):
         self.gender = gender
         self.min_age = min_age
         self.max_age = max_age
         self.modules = modules
+        self.reference_date = reference_date
     def generate(self):
         import re
         from datetime import datetime, date
@@ -36,6 +37,7 @@ class PatientReportTemplate:
             min_age=self.min_age,
             max_age=self.max_age,
             modules=self.modules,
+            reference_date=self.reference_date,
         )
 
         # Helper to strip trailing digits from names
@@ -50,8 +52,15 @@ class PatientReportTemplate:
             birth_year = int(dob[:4])
             birth_month = int(dob[5:7])
             birth_day = int(dob[8:10])
-            today = datetime.now()
-            age = today.year - birth_year - ((today.month, today.day) < (birth_month, birth_day))
+            # Use reference_date if provided, else today
+            if self.reference_date is not None:
+                try:
+                    ref_dt = datetime.strptime(str(self.reference_date), "%Y%m%d")
+                except Exception:
+                    ref_dt = datetime.now()
+            else:
+                ref_dt = datetime.now()
+            age = ref_dt.year - birth_year - ((ref_dt.month, ref_dt.day) < (birth_month, birth_day))
             age_str = f"{age} yrs"
         except Exception:
             age_str = "-"
@@ -129,16 +138,22 @@ class PatientReportTemplate:
             med_lines = [
                 f"{date.today()} [CURRENT] : No medications prescribed"
             ]
-        med_section = '\n'.join(med_lines)
+        med_section = '\n'.join(f'- {line}' for line in med_lines)
 
         # Conditions (use patient_conditions DataFrame, filter out non-clinical entries)
         cond_lines = []
         non_conditions = [
-            "Received higher education", "Completed high school", "Completed college", "Graduated", "Education", "Employed", "Unemployed", "Student", "Retired", "Homemaker", "Military service"
+            "Received higher education", "Completed high school", "Completed college", "Graduated", "Education", "Employed", "Unemployed", "Student", "Retired", "Homemaker", "Military service",
+            "Educated to high school level (finding)", "Education level", "Educational attainment", "High school education", "Bachelor's degree", "Master's degree", "Doctorate degree", "GED", "Diploma", "School", "Degree", "Literacy",
+            # Employment-related
+            "employ", "occupation", "job", "work", "unemployed", "retired", "layoff", "career", "profession", "business owner", "self-employed", "laborer", "manager", "office worker", "technician", "engineer", "teacher", "service worker"
         ]
         filtered_conditions = conditions.copy()
         if not filtered_conditions.empty and 'DESCRIPTION' in filtered_conditions.columns:
-            mask = ~filtered_conditions['DESCRIPTION'].str.contains('|'.join(non_conditions), case=False, na=False)
+            import re
+            escaped_patterns = [re.escape(s) for s in non_conditions]
+            pattern = '|'.join(escaped_patterns)
+            mask = ~filtered_conditions['DESCRIPTION'].str.contains(pattern, case=False, na=False, regex=True)
             filtered_conditions = filtered_conditions[mask]
         if not filtered_conditions.empty:
             for _, cond in filtered_conditions.iterrows():
@@ -153,7 +168,7 @@ class PatientReportTemplate:
             cond_lines = [
                 f"{date.today()} -            : No chronic conditions found"
             ]
-        cond_section = '\n'.join(cond_lines)
+        cond_section = '\n'.join(f'- {line}' for line in cond_lines)
 
         # Care Plans
         careplans = patient.get('CAREPLANS', [])
@@ -178,9 +193,9 @@ class PatientReportTemplate:
                 care_lines.append(str(cp))
         if not care_lines:
             care_lines = [
-                f"{date.today()} [CURRENT] : Lifestyle counseling\n     Activity: Recommendation to increase exercise"
+                "None reported"
             ]
-        care_section = '\n'.join(care_lines)
+        care_section = '\n'.join(f'- {line}' for line in care_lines)
 
         # Observations
         observations = patient.get('OBSERVATIONS', [])
@@ -193,13 +208,13 @@ class PatientReportTemplate:
                 desc = obs.get('DESCRIPTION', '').lower()
                 value = obs.get('VALUE', '')
                 unit = obs.get('UNIT', '')
-                obs_lines.append(f"{date_obs[:10]} : {obs.get('DESCRIPTION',''):<40} {value} {unit}")
+                obs_lines.append(f"- {date_obs[:10]} : {obs.get('DESCRIPTION',''):<40} {value} {unit}")
         # Add the randomized observations
-        obs_lines.append(f"{today_str} : Body Weight                              {body_weight}")
-        obs_lines.append(f"{today_str} : Body Height                              {body_height}")
-        obs_lines.append(f"{today_str} : Body Mass Index                          {body_bmi}")
-        obs_lines.append(f"{today_str} : Systolic Blood Pressure                  {systolic_bp} mmHg")
-        obs_lines.append(f"{today_str} : Diastolic Blood Pressure                 {diastolic_bp} mmHg")
+        obs_lines.append(f"- {today_str} : Body Weight                              {body_weight}")
+        obs_lines.append(f"- {today_str} : Body Height                              {body_height}")
+        obs_lines.append(f"- {today_str} : Body Mass Index                          {body_bmi}")
+        obs_lines.append(f"- {today_str} : Systolic Blood Pressure                  {systolic_bp} mmHg")
+        obs_lines.append(f"- {today_str} : Diastolic Blood Pressure                 {diastolic_bp} mmHg")
 
         # Procedures
         procedures = patient.get('PROCEDURES', [])
@@ -218,7 +233,7 @@ class PatientReportTemplate:
             proc_lines = [
                 f"{date.today()} : Blood draw"
             ]
-        proc_section = '\n'.join(proc_lines)
+        proc_section = '\n'.join(f'- {line}' for line in proc_lines)
 
         # Encounters
         encounters = patient.get('ENCOUNTERS', [])
@@ -229,71 +244,48 @@ class PatientReportTemplate:
             if isinstance(enc, dict):
                 date = enc.get('DATE', '')
                 desc = enc.get('DESCRIPTION', '')
-                enc_lines.append(f"{date[:10]} : {desc}")
+                reason = enc.get('REASONDESCRIPTION', '')
+                enc_lines.append(f"{date[:10]} : {desc}" + (f" for {reason}" if reason else ''))
             else:
                 enc_lines.append(str(enc))
         if not enc_lines:
             enc_lines = [
-                f"{date.today()} : Outpatient Encounter"
+                f"{date.today()} : Office visit"
             ]
-        enc_section = '\n'.join(enc_lines)
+        enc_section = '\n'.join(f'- {line}' for line in enc_lines)
 
         # Header block (demographics)
         lines = [
-            f"PATIENT REPORT",
-            "="*70,
-            f"Name:           {name}",
-            f"Date of Birth:  {dob}",
-            f"Gender:         {sex}",
-            f"Age:            {age_str}",
+            f"{name}",
+            "="*18,
             f"Race:           {race}",
             f"Ethnicity:      {ethnicity}",
-            f"Marital Status: {patient.get('MARITAL', 'Unknown')}",
-            "-"*70,
+            f"Gender:         {sex[0] if sex else ''}",
+            f"Age:            {age_str}",
+            f"Birth Date:     {dob[:10]}",
+            f"Marital Status: {marital}",
+            "-"*80,
+            f"ALLERGIES: {', '.join(allergies) if allergies else 'N/A'}",
+            "-"*80,
+            "MEDICATIONS:",
+            *med_section.splitlines(),
+            "-"*80,
+            "CONDITIONS:",
+            *cond_section.splitlines()[:5],
+            "-"*80,
+            "CARE PLANS:",
+            *care_section.splitlines(),
+            "-"*80,
+            "OBSERVATIONS:",
+            *obs_lines,
+            "-"*80,
+            "PROCEDURES:",
+            *proc_section.splitlines(),
+            "-"*80,
+            "ENCOUNTERS:",
+            *enc_section.splitlines(),
+            "-"*80,
         ]
-        # Allergies
-        lines.append("ALLERGIES:")
-        if allergies:
-            lines.extend([f"  - {a}" for a in allergies])
-        else:
-            lines.append("  None reported")
-        lines.append("-"*70)
-
-        # Encounters (chronological)
-        lines.append("ENCOUNTERS:")
-        lines.append("-"*70)
-        lines.extend(enc_lines)
-        lines.append("-"*70)
-
-        # Conditions (limit to 4)
-        lines.append("CONDITIONS:")
-        lines.append("-"*70)
-        if cond_lines:
-            lines.extend(cond_lines[:4])
-        else:
-            lines.append("  None reported")
-        lines.append("-"*70)
-
-        # Medications
-        lines.append("MEDICATIONS:")
-        lines.append("-"*70)
-        lines.extend(med_lines)
-        lines.append("-"*70)
-
-        # Procedures
-        lines.append("PROCEDURES:")
-        lines.append("-"*70)
-        lines.extend(proc_lines)
-        lines.append("-"*70)
-
-        # Observations
-        lines.append("OBSERVATIONS:")
-        lines.append("-"*70)
-        lines.extend(obs_lines)
-        lines.append("-"*70)
-
-        # Footer
         lines.append("END OF REPORT")
         lines.append("="*70)
-
         return {"lines": lines}
