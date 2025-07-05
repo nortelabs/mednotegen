@@ -17,8 +17,8 @@ def main():
         with open(args.config, 'r') as f:
             config = yaml.safe_load(f)
         generator = NoteGenerator.from_config(args.config)
-        count = generator.count if hasattr(generator, 'count') else args.count or 1
-        output = generator.output_dir if hasattr(generator, 'output_dir') else args.output or 'output_dir'
+        count = config.get('count', args.count or 1)
+        output = config.get('output_dir', args.output or 'output_dir')
         use_llm = generator.use_llm if hasattr(generator, 'use_llm') else args.use_llm
     else:
         count = args.count or 1
@@ -43,7 +43,7 @@ def main():
         except Exception:
             data_source = 'Faker'
     generator.generate_notes(count, output)
-    print(f"Generated {count} {note_type.replace('_', ' ')}(s) in {output}/ using {data_source}.")
+    print(f"Generated {count} patient report(s) in {output}/ using {data_source}.")
 
 if __name__ == "__main__":
     main()

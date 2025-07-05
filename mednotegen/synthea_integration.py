@@ -80,19 +80,31 @@ def load_synthea_patients():
     patients = pd.read_csv(patients_csv)
     medications = pd.read_csv(medications_csv)
     conditions = pd.read_csv(conditions_csv)
-    return patients, medications, conditions
+    careplans_csv = os.path.join(OUTPUT_CSV_DIR, 'careplans.csv')
+    if os.path.exists(careplans_csv):
+        careplans = pd.read_csv(careplans_csv)
+    else:
+        careplans = pd.DataFrame()
+    return patients, medications, conditions, careplans
 
 def get_random_patient_with_meds(gender=None, min_age=None, max_age=None, modules=None, reference_date=None):
     """Get a random patient and their medications from Synthea data, with demographic and module filtering."""
     import numpy as np
     from datetime import datetime
-    patients, medications, conditions = load_synthea_patients()
+    patients, medications, conditions, careplans = load_synthea_patients()
     filtered_patients = patients.copy()
-    # Gender filter
-    if gender and gender.lower() in ("male", "female"):
-        gender_map = {"female": ["female", "f"], "male": ["male", "m"]}
-        allowed = gender_map[gender.lower()]
-        filtered_patients = filtered_patients[filtered_patients['GENDER'].str.lower().isin(allowed)]
+    # Gender filter (accepts 'F', 'M', 'female', 'male', case-insensitive)
+    if gender:
+        gender_str = str(gender).strip().lower()
+        # Map short forms to full
+        if gender_str in ["f", "female"]:
+            allowed = ["female", "f"]
+        elif gender_str in ["m", "male"]:
+            allowed = ["male", "m"]
+        else:
+            allowed = None
+        if allowed:
+            filtered_patients = filtered_patients[filtered_patients['GENDER'].str.lower().isin(allowed)]
     # Age filter
     if min_age is not None or max_age is not None:
         # Use reference_date if provided, else today
@@ -154,4 +166,5 @@ def get_random_patient_with_meds(gender=None, min_age=None, max_age=None, module
     patient_id = patient['Id']
     patient_meds = medications[medications['PATIENT'] == patient_id]
     patient_conditions = conditions[conditions['PATIENT'] == patient_id]
-    return patient, patient_meds, patient_conditions
+    patient_careplans = careplans[careplans['PATIENT'] == patient_id] if not careplans.empty else pd.DataFrame()
+    return patient, patient_meds, patient_conditions, patient_careplans

@@ -14,7 +14,7 @@ class PatientReportTemplate:
         import re
         from datetime import datetime, date
         from .synthea_integration import get_random_patient_with_meds
-        patient, meds, conditions = get_random_patient_with_meds(
+        patient, meds, conditions, careplans = get_random_patient_with_meds(
             gender=self.gender,
             min_age=self.min_age,
             max_age=self.max_age,
@@ -152,27 +152,27 @@ class PatientReportTemplate:
             ]
         cond_section = '\n'.join(f'- {line}' for line in cond_lines)
 
-        # Care Plans
-        careplans = patient.get('CAREPLANS', [])
-        if isinstance(careplans, str):
-            careplans = [careplans] if careplans else []
+        # Care Plans (from Synthea careplans DataFrame)
         care_lines = []
-        for cp in careplans:
-            if isinstance(cp, dict):
+        import pandas as pd
+        def safe_fmt(val):
+            if isinstance(val, str):
+                return val[:10]
+            if pd.isna(val):
+                return ''
+            return str(val)[:10]
+        if careplans is not None and not careplans.empty:
+            for _, cp in careplans.iterrows():
                 start = cp.get('START', '')
-                status = cp.get('STOP', '')
+                stop = cp.get('STOP', '')
                 desc = cp.get('DESCRIPTION', '')
                 reason = cp.get('REASONDESCRIPTION', '')
-                acts = cp.get('ACTIVITIES', [])
-                start_fmt = start[:10] if start else ''
-                status_str = '[CURRENT]' if not status or pd.isna(status) else '[STOPPED]'
-                care_lines.append(f"{start_fmt} {status_str} : {desc}")
+                start_fmt = safe_fmt(start)
+                status_str = '[CURRENT]' if not stop or pd.isna(stop) else '[STOPPED]'
+                line = f"{start_fmt} {status_str} : {desc}"
                 if reason:
-                    care_lines.append(f"     Reason: {reason}")
-                for act in acts:
-                    care_lines.append(f"     Activity: {act}")
-            else:
-                care_lines.append(str(cp))
+                    line += f" (Reason: {reason})"
+                care_lines.append(line)
         if not care_lines:
             care_lines = [
                 "None reported"
