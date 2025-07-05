@@ -1,24 +1,6 @@
 from .synthea_integration import get_random_patient_with_meds
 
-class DoctorNoteTemplate:
-    filename_prefix = "doctor_note"
-    def generate(self):
-        patient, meds, conditions = get_random_patient_with_meds()
-        name = f"{patient['FIRST']} {patient['LAST']}"
-        date = patient['BIRTHDATE']
-        diagnosis = conditions.get('DESCRIPTION', 'N/A')
-        medication = ', '.join(meds['DESCRIPTION'].unique()) if not meds.empty else "None"
-        instructions = "Take medications as prescribed. Follow up as needed."
-        lines = [
-            f"Doctor Note",
-            f"Date: {date}",
-            f"Patient: {name}",
-            f"Diagnosis: {diagnosis}",
-            f"Prescribed Medication: {medication}",
-            "\nInstructions:",
-            instructions,
-        ]
-        return {"lines": lines}
+
 
 class PatientReportTemplate:
     filename_prefix = "patient_report"

@@ -3,7 +3,7 @@ from .generator import NoteGenerator
 
 def main():
     parser = argparse.ArgumentParser(description="Generate fake doctor notes or patient reports as PDFs.")
-    parser.add_argument('--type', choices=['doctor_note', 'patient_report'], help='Type of note/report to generate')
+
     parser.add_argument('--count', type=int, help='Number of reports to generate')
     parser.add_argument('--output', type=str, help='Output directory for PDFs')
     parser.add_argument('--use-llm', action='store_true', help='Use LLM to generate note/report content (requires OpenAI API key)')
@@ -16,18 +16,15 @@ def main():
         import yaml
         with open(args.config, 'r') as f:
             config = yaml.safe_load(f)
-        note_type = config.get('note_type', 'patient_report')
-        count = config.get('count', 1)
-        output = config.get('output_dir', 'output')
-        use_llm = config.get('use_llm', False)
-        # Instantiate generator using full config to pass through demographic filters
         generator = NoteGenerator.from_config(args.config)
+        count = generator.count if hasattr(generator, 'count') else args.count or 1
+        output = generator.output_dir if hasattr(generator, 'output_dir') else args.output or 'output_dir'
+        use_llm = generator.use_llm if hasattr(generator, 'use_llm') else args.use_llm
     else:
-        note_type = args.type if args.type else 'patient_report'
-        count = args.count if args.count else 1
-        output = args.output if args.output else 'output'
+        count = args.count or 1
+        output = args.output or 'output_dir'
         use_llm = args.use_llm
-        generator = NoteGenerator(note_type, use_llm=use_llm)
+        generator = NoteGenerator(use_llm=use_llm)
 
     # Attempt to detect data source for reporting
     data_source = 'Unknown'

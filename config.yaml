@@ -1,5 +1,4 @@
 # Example configuration for mednotegen
-note_type: patient_report
 count: 10
 output_dir: output_dir
 use_llm: false
@@ -10,8 +9,7 @@ clinician_seed: 5678         # Optional: separate seed for clinician assignment
 gender: female               # male, female, or any
 min_age: 30                  # Minimum patient age
 max_age: 60                  # Maximum patient age
-state: Massachusetts         # Synthea state parameter
-city: Boston
+state: New York         # Synthea state parameter
 modules:
   - cardiovascular-disease
   - diabetes      

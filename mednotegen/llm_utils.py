@@ -24,13 +24,7 @@ class LLMGenerator:
         return response.choices[0].message["content"].strip()
 
     def _build_prompt(self, note_type, patient_info=None):
-        if note_type == "doctor_note":
-            return (
-                "Generate a realistic, synthetic doctor note for a random adult patient. "
-                "Include: Date, Patient Name, Diagnosis, Prescribed Medication, and Instructions. "
-                "Format as a short, readable note."
-            )
-        elif note_type == "patient_report":
+        if note_type == "patient_report":
             return (
                 "Generate a realistic, synthetic patient report for a random adult. "
                 "Include: Name, Date of Birth, Visit Date, and a summary of the visit. "
