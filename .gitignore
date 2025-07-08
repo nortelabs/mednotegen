@@ -6,3 +6,5 @@ synthea/
 synthea/output/
 *.csv
 synthea-with-dependencies.jar
+mednotegen.egg-info/
+dist/

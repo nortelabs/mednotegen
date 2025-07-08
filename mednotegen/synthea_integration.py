@@ -47,8 +47,9 @@ Then ensure synthea-with-dependencies.jar is located at: {SYNTHEA_JAR}
         cmd.append(city)
     result = subprocess.run(cmd, cwd=SYNTHEA_DIR, capture_output=True, text=True)
     if result.returncode != 0:
-        raise RuntimeError(f"Synthea failed: {result.stderr}")
+        raise RuntimeError(f"Synthea failed: {result.stderr}\nSTDOUT:\n{result.stdout}")
     print("Synthea data generated successfully.")
+    return result
 
 # Synthea module to SNOMED/ICD code mapping for filtering
 MODULE_TO_CODES = {
@@ -85,11 +86,24 @@ def load_synthea_patients():
     patients_csv = os.path.join(OUTPUT_CSV_DIR, 'patients.csv')
     medications_csv = os.path.join(OUTPUT_CSV_DIR, 'medications.csv')
     conditions_csv = os.path.join(OUTPUT_CSV_DIR, 'conditions.csv')
-    if not os.path.exists(patients_csv) or not os.path.exists(medications_csv) or not os.path.exists(conditions_csv):
+    required_files = [patients_csv, medications_csv, conditions_csv]
+    if not all(os.path.exists(f) for f in required_files):
         print("Synthea patient data not found. Running Synthea to generate data...")
-        run_synthea(num_patients=10, state="Massachusetts")
-    if not os.path.exists(patients_csv) or not os.path.exists(medications_csv) or not os.path.exists(conditions_csv):
-        raise FileNotFoundError("Synthea patient data could not be generated. Check Synthea installation.")
+        result = run_synthea(num_patients=10, state="Massachusetts")
+        # After running Synthea, check what files exist and print directory listing
+        print(f"Checking for required Synthea CSVs in: {OUTPUT_CSV_DIR}")
+        if os.path.exists(OUTPUT_CSV_DIR):
+            print("Contents of Synthea output directory:")
+            for fname in os.listdir(OUTPUT_CSV_DIR):
+                print("  ", fname)
+        else:
+            print("Synthea output directory does not exist:", OUTPUT_CSV_DIR)
+        # Print Synthea stdout/stderr if files are missing
+        if not all(os.path.exists(f) for f in required_files):
+            print("Synthea stdout:\n", result.stdout)
+            print("Synthea stderr:\n", result.stderr)
+            missing = [os.path.basename(f) for f in required_files if not os.path.exists(f)]
+            raise FileNotFoundError(f"Synthea patient data could not be generated. Missing files: {missing}. Check Synthea installation and output above.")
     patients = pd.read_csv(patients_csv)
     medications = pd.read_csv(medications_csv)
     conditions = pd.read_csv(conditions_csv)
