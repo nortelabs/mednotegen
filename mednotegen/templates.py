@@ -171,7 +171,8 @@ class PatientReportTemplate:
                 status_str = '[CURRENT]' if not stop or pd.isna(stop) else '[STOPPED]'
                 line = f"{start_fmt} {status_str} : {desc}"
                 if reason:
-                    line += f" (Reason: {reason})"
+                    if reason and str(reason).lower() != 'nan':
+                        line += f" (Reason: {reason})"
                 care_lines.append(line)
         if not care_lines:
             care_lines = [

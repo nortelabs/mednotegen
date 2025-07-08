@@ -9,7 +9,7 @@ clinician_seed: 5678         # Optional: separate seed for clinician assignment
 gender: female               # male, female, or any
 min_age: 30                  # Minimum patient age
 max_age: 60                  # Maximum patient age
-state: New York         # Synthea state parameter
+state: New York              # Synthea state parameter
 modules:
   - cardiovascular-disease
   - diabetes      
