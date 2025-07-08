@@ -21,7 +21,6 @@ dependencies = [
 
 [project.optional-dependencies]
 llm = ["openai"]
-keywords = ["synthea", "medical notes", "pdf"]
 [project.urls]
 "Repository" = "https://github.com/nortelabs/mednotegen"
 "Bug Tracker" = "https://github.com/nortelabs/mednotegen/issues"
