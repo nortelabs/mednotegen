@@ -8,7 +8,7 @@ version = "0.1.2"
 description = "Generate fake patient reports as PDFs."
 readme = "README.md"
 authors = [
-    { name = "Mikael Moise", email = "mikael.moise@protonmail.com" }
+    { name = "Mikael Moise", email = "mikaelmoise00@gmail.com" }
 ]
 requires-python = ">=3.7"
 dependencies = [
