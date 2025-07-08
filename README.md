@@ -4,7 +4,13 @@
 
 This project uses [Synthea™](https://github.com/synthetichealth/synthea) to generate realistic synthetic patient data for doctor notes and reports.
 
-### How to Set Up Synthea
+---
+
+## ⚠️ Synthea Dependency Required
+
+This project requires [Synthea™](https://github.com/synthetichealth/synthea), an open-source synthetic patient generator, as an **external dependency**. You must clone and build Synthea yourself before using `mednotegen`.
+
+**To set up Synthea:**
 
 1. **Clone Synthea**
    ```sh
@@ -19,29 +25,10 @@ This project uses [Synthea™](https://github.com/synthetichealth/synthea) to ge
    ```
    Ensure `synthea-with-dependencies.jar` is in the `synthea/` directory at the root of your project.
 
-3. **Java Requirement**
-   You must have Java (JDK 8 or newer) installed. To install on macOS:
-   ```sh
-   brew install openjdk@17
-   echo 'export PATH="/usr/local/opt/openjdk@17/bin:$PATH"' >> ~/.zshrc
-   source ~/.zshrc
-   ```
-   Or download from [Oracle](https://www.oracle.com/java/technologies/downloads/).
+---
 
 
-### Attribution
 
-See `README_SYNTHEA_NOTICE.md` and `LICENSE-APACHE-2.0` for license and attribution requirements.
-Generate fake doctor notes or patient reports as PDFs
-
-## Installation
-
-### 1. Create a virtual environment and install base requirements
-```sh
-uv venv .venv
-source .venv/bin/activate
-uv pip install -r requirements.txt
-```
 
 ## Configuration (`config.yaml`)
 
@@ -85,74 +72,55 @@ local_modules: ./synthea_modules         # Directory for custom modules
 ### More Synthea Modules
 For an up-to-date and complete list of available modules, see the [official Synthea modules directory](https://github.com/synthetichealth/synthea/tree/master/src/main/resources/modules).
 
-## Usage
+## Example Use Cases
 
-### Generate with Faker/templates (default):
+### 1. Generate Reports from the Command Line
+
+After installing your package (e.g., `pip install -e .`), you can generate reports via the CLI:
+
 ```sh
-python -m mednotegen.cli --count 5 --output output_dir
+mednotegen --count 5 --output output_dir
+```
+Or with a config file:
+```sh
+mednotegen --config config.yaml
 ```
 
-### Generate with LLM (OpenAI):
-```sh
-export OPENAI_API_KEY=your-key-here
-python -m mednotegen.cli --count 2 --output output_dir --use-llm
+### 2. Use as a Python Module
+
+You can also generate reports programmatically from Python:
+
+```python
+from mednotegen.generator import NoteGenerator
+
+gen = NoteGenerator(count=3, output_dir="output_dir")
+gen.generate_notes(3, "output_dir")
+```
+Or using a config file:
+```python
+from mednotegen.generator import NoteGenerator
+
+gen = NoteGenerator.from_config("config.yaml")
+gen.generate_notes(10, "output_dir")
 ```
 
-- Requires `OPENAI_API_KEY` in your environment.
-- LLM mode uses GPT-3.5/4 for realistic synthetic patient reports.
+### 3. Generate a Single Patient Report as Text
+
+If you want to get a single report as a list of lines (instead of PDF):
+
+```python
+from mednotegen.templates import PatientReportTemplate
+
+template = PatientReportTemplate(gender="female", min_age=30, max_age=60)
+lines = template.generate()["lines"]
+for line in lines:
+    print(line)
+```
+
 
 ---
 
-## Example Patient Report Output
 
-```
-Mekhi724 Kemmer911
-==================
-Race:           White
-Ethnicity:      Non-Hispanic
-Gender:         F
-Age:            33
-Birth Date:     1983-11-04
-Marital Status: M
---------------------------------------------------------------------------------
-ALLERGIES: N/A
---------------------------------------------------------------------------------
-MEDICATIONS:
-2013-08-22 [CURRENT] : Acetaminophen 160 MG for Acute bronchitis (disorder)
-1996-05-12 [CURRENT] : Acetaminophen 160 MG for Acute bronchitis (disorder)
-1995-04-13 [CURRENT] : Acetaminophen 160 MG for Acute bronchitis (disorder)
-1984-01-14 [CURRENT] : Penicillin V Potassium 250 MG for Streptococcal sore throat (disorder)
---------------------------------------------------------------------------------
-CONDITIONS:
-2015-10-30 - 2015-11-07 : Fetus with chromosomal abnormality
-2015-10-30 - 2015-11-07 : Miscarriage in first trimester
-2015-10-30 - 2015-11-07 : Normal pregnancy
-2013-08-22 - 2013-09-08 : Acute bronchitis (disorder)
-1985-08-07 -            : Food Allergy: Fish
---------------------------------------------------------------------------------
-CARE PLANS:
-2013-08-22 [STOPPED] : Respiratory therapy
-                         Reason: Acute bronchitis (disorder)
-                         Activity: Recommendation to avoid exercise
-                         Activity: Deep breathing and coughing exercises
---------------------------------------------------------------------------------
-OBSERVATIONS:
-2014-01-14 : Body Weight                              73.9 kg
-2014-01-14 : Body Height                              163.7 cm
-2014-01-14 : Body Mass Index                          27.6 kg/m2
-2014-01-14 : Systolic Blood Pressure                  133.0 mmHg
-2014-01-14 : Diastolic Blood Pressure                 76.0 mmHg
-2014-01-14 : Blood Pressure                           2.0 
---------------------------------------------------------------------------------
-PROCEDURES:
-2015-10-30 : Standard pregnancy test for Normal pregnancy
-2014-01-14 : Documentation of current medications
---------------------------------------------------------------------------------
-ENCOUNTERS:
-2015-11-07 : Encounter for Fetus with chromosomal abnormality
-2015-10-30 : Encounter for Normal pregnancy
-2014-01-14 : Outpatient Encounter
-2013-08-22 : Encounter for Acute bronchitis (disorder)
---------------------------------------------------------------------------------
-```
+### Attribution
 
+See `README_SYNTHEA_NOTICE.md` and `LICENSE-APACHE-2.0` for license and attribution requirements.

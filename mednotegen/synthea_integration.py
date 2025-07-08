@@ -9,7 +9,20 @@ OUTPUT_CSV_DIR = os.path.join(SYNTHEA_DIR, 'output', 'csv')
 def run_synthea(num_patients=10, state="Massachusetts", city=None, seed=None, reference_date=None, clinician_seed=None, gender=None, min_age=None, max_age=None, modules=None, local_config=None, local_modules=None):
     """Run Synthea to generate synthetic patient data with advanced options."""
     if not os.path.exists(SYNTHEA_JAR):
-        raise FileNotFoundError(f"Synthea JAR not found at {SYNTHEA_JAR}. Please download Synthea and place the JAR here.")
+        raise FileNotFoundError(
+            f"""
+Synthea JAR not found at {SYNTHEA_JAR}.
+
+To use mednotegen, you must first clone and build Synthea:
+
+  git clone https://github.com/synthetichealth/synthea.git
+  cd synthea
+  ./gradlew build check test
+  cp build/libs/synthea-with-dependencies.jar .
+  cd ..
+
+Then ensure synthea-with-dependencies.jar is located at: {SYNTHEA_JAR}
+            """)
     cmd = ["java", "-jar", SYNTHEA_JAR]
     if seed is not None:
         cmd += ["-s", str(seed)]
