@@ -1,3 +1,37 @@
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "mednotegen"
+version = "0.1.2"
+description = "Generate fake patient reports as PDFs."
+readme = "README.md"
+authors = [
+    { name = "Mikael Moise", email = "mikael.moise@protonmail.com" }
+]
+requires-python = ">=3.7"
+dependencies = [
+    "faker",
+    "fpdf"
+]
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering",
+]
+keywords = ["synthea", "medical notes", "pdf"]
+[project.urls]
+"Repository" = "https://github.com/nortelabs/mednotegen"
+"Bug Tracker" = "https://github.com/nortelabs/mednotegen/issues"
+[project.scripts]
+mednotegen = "mednotegen.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["mednotegen*"]

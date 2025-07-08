@@ -1,5 +1,10 @@
 # mednotegen
 
+[![Python Versions](https://img.shields.io/pypi/pyversions/mednotegen.svg)](https://pypi.python.org/pypi/mednotegen)
+[![PyPI](https://img.shields.io/pypi/v/mednotegen)](https://pypi.org/project/mednotegen/#history)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/mednotegen)](https://pypistats.org/packages/mednotegen)
+[![Repo Status](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
+
 This project uses [Synthea™](https://github.com/synthetichealth/synthea) to generate realistic synthetic patient data for  medical notes. 
 
 ---

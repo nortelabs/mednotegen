@@ -2,6 +2,8 @@ import argparse
 from .generator import NoteGenerator
 
 def main():
+    import argparse
+    from .generator import NoteGenerator
     parser = argparse.ArgumentParser(description="Generate fake doctor notes or patient reports as PDFs.")
 
     parser.add_argument('--count', type=int, help='Number of reports to generate')
