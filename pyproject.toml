@@ -21,7 +21,6 @@ dependencies = [
 
 [project.optional-dependencies]
 llm = ["openai"]
-license = {text = "MIT"}
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Programming Language :: Python",
