@@ -17,6 +17,43 @@ gen = NoteGenerator(synthea_csv_dir="/path/to/synthea/output/csv")
 gen.generate_notes(10, "output_dir")
 ```
 
+## Using a Custom Synthea Directory with config.yaml
+
+You can specify the Synthea CSV directory directly in your config file. Add the following line to your `config.yaml`:
+
+```yaml
+synthea_csv_dir: /path/to/synthea/output/csv
+```
+
+Example `config.yaml`:
+```yaml
+count: 10
+output_dir: output_dir
+synthea_csv_dir: /path/to/synthea/output/csv
+# ... other options ...
+```
+
+Then generate notes using:
+
+```python
+from mednotegen.generator import NoteGenerator
+
+gen = NoteGenerator.from_config("config.yaml")
+gen.generate_notes(10, "output_dir")
+```
+
+Or from the CLI:
+
+```sh
+mednotegen --config config.yaml
+```
+
+You can override the config value with the CLI option if needed:
+
+```sh
+mednotegen --config config.yaml --synthea-csv-dir /another/path/to/synthea/output/csv
+```
+
 ### CLI Usage
 
 You can also specify the Synthea CSV directory via the CLI:
