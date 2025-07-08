@@ -1,6 +1,6 @@
 # mednotegen
 
-This project uses [Synthea™](https://github.com/synthetichealth/synthea) to generate realistic synthetic patient data for doctor notes and reports.
+This project uses [Synthea™](https://github.com/synthetichealth/synthea) to generate realistic synthetic patient data for  medical notes. 
 
 ---
 
@@ -21,16 +21,11 @@ gen.generate_notes(10, "output_dir")
 
 You can specify the Synthea CSV directory directly in your config file. Add the following line to your `config.yaml`:
 
-```yaml
-synthea_csv_dir: /path/to/synthea/output/csv
-```
-
 Example `config.yaml`:
 ```yaml
 count: 10
 output_dir: output_dir
 synthea_csv_dir: /path/to/synthea/output/csv
-# ... other options ...
 ```
 
 Then generate notes using:
@@ -40,26 +35,6 @@ from mednotegen.generator import NoteGenerator
 
 gen = NoteGenerator.from_config("config.yaml")
 gen.generate_notes(10, "output_dir")
-```
-
-Or from the CLI:
-
-```sh
-mednotegen --config config.yaml
-```
-
-You can override the config value with the CLI option if needed:
-
-```sh
-mednotegen --config config.yaml --synthea-csv-dir /another/path/to/synthea/output/csv
-```
-
-### CLI Usage
-
-You can also specify the Synthea CSV directory via the CLI:
-
-```sh
-mednotegen --count 10 --output output_dir --synthea-csv-dir /path/to/synthea/output/csv
 ```
 
 
@@ -92,7 +67,7 @@ You can customize patient generation and report output using a `config.yaml` fil
 count: 10                    # Number of reports to generate
 output_dir: output_dir       # Output directory for PDFs
 use_llm: false               # Use LLM for report generation
-synthea_csv_dir: /path/to/synthea/output/csv   # <--- NEW: Path to Synthea-generated CSV files
+synthea_csv_dir: /path/to/synthea/output/csv   # Path to Synthea-generated CSV files
 seed: 1234                   # Random seed for reproducibility
 reference_date: "20250628"   # Reference date for data generation (YYYYMMDD)
 clinician_seed: 5678         # Optional: separate seed for clinician assignment
@@ -129,11 +104,44 @@ For an up-to-date and complete list of available modules, see the [official Synt
 
 ---
 
-## Troubleshooting: Synthea Data Location
+### Troubleshooting: 
+#### Synthea Data Location
 
 If you see errors about missing `patients.csv`, `medications.csv`, or `conditions.csv`, make sure you have generated Synthea data and that the path you provide (via `synthea_csv_dir`, CLI, or config) points to the correct directory containing those files.
 
 If you installed `mednotegen` via pip, the default location is inside the package directory. For custom or system-wide Synthea runs, always specify the output CSV directory explicitly.
+
+- **No CSV files generated:**
+  - Make sure you edited the correct `synthea.properties` and used the `-c` flag when running Synthea.
+  - Ensure `exporter.csv.export = true` is set and not overridden elsewhere in the file.
+- **FileNotFoundError for CSVs:**
+  - Confirm the CSV files exist in the path specified by `synthea_csv_dir` or in the expected package location.
+- **ValueError: No patients found matching the specified filters:**
+  - Check your age/gender filters in `config.yaml`. Try relaxing them if you have too few patients.
+
+
+### Configure Synthea to Export CSVs
+
+Edit `src/main/resources/synthea.properties` in your Synthea directory:
+
+```
+exporter.csv.export = true
+```
+
+(Ensure any `exporter.csv.export = false` lines are removed or commented out.)
+
+### Generate Patient Data with Synthea
+
+From your Synthea directory, clean any old output and generate new data:
+
+```
+rm -rf output/
+java -jar synthea-with-dependencies.jar -c src/main/resources/synthea.properties -p 1000
+```
+
+- The `-p 1000` flag generates 1000 patients.
+- After running, check for CSV files in `output/csv/`.
+
 
 ### Attribution
 
