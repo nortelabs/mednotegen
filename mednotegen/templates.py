@@ -4,12 +4,13 @@ from .synthea_integration import get_random_patient_with_meds
 
 class PatientReportTemplate:
     filename_prefix = "patient_report"
-    def __init__(self, gender=None, min_age=None, max_age=None, modules=None, reference_date=None):
+    def __init__(self, gender=None, min_age=None, max_age=None, modules=None, reference_date=None, synthea_csv_dir=None):
         self.gender = gender
         self.min_age = min_age
         self.max_age = max_age
         self.modules = modules
         self.reference_date = reference_date
+        self.synthea_csv_dir = synthea_csv_dir
     def generate(self):
         import re
         from datetime import datetime, date
@@ -20,6 +21,7 @@ class PatientReportTemplate:
             max_age=self.max_age,
             modules=self.modules,
             reference_date=self.reference_date,
+            synthea_csv_dir=self.synthea_csv_dir
         )
 
         # Helper to strip trailing digits from names

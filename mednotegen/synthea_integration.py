@@ -81,24 +81,23 @@ MODULE_TO_CODES = {
     ],
 }
 
-def load_synthea_patients():
+def load_synthea_patients(synthea_csv_dir=None):
     """Load Synthea-generated patient and medication data as pandas DataFrames. If missing, auto-generate with Synthea."""
-    patients_csv = os.path.join(OUTPUT_CSV_DIR, 'patients.csv')
-    medications_csv = os.path.join(OUTPUT_CSV_DIR, 'medications.csv')
-    conditions_csv = os.path.join(OUTPUT_CSV_DIR, 'conditions.csv')
+    csv_dir = synthea_csv_dir or OUTPUT_CSV_DIR
+    patients_csv = os.path.join(csv_dir, 'patients.csv')
+    medications_csv = os.path.join(csv_dir, 'medications.csv')
+    conditions_csv = os.path.join(csv_dir, 'conditions.csv')
     required_files = [patients_csv, medications_csv, conditions_csv]
     if not all(os.path.exists(f) for f in required_files):
-        print("Synthea patient data not found. Running Synthea to generate data...")
+        print(f"Synthea patient data not found. Expected in: {csv_dir}. Running Synthea to generate data...")
         result = run_synthea(num_patients=10, state="Massachusetts")
-        # After running Synthea, check what files exist and print directory listing
-        print(f"Checking for required Synthea CSVs in: {OUTPUT_CSV_DIR}")
-        if os.path.exists(OUTPUT_CSV_DIR):
+        print(f"Checking for required Synthea CSVs in: {csv_dir}")
+        if os.path.exists(csv_dir):
             print("Contents of Synthea output directory:")
-            for fname in os.listdir(OUTPUT_CSV_DIR):
+            for fname in os.listdir(csv_dir):
                 print("  ", fname)
         else:
-            print("Synthea output directory does not exist:", OUTPUT_CSV_DIR)
-        # Print Synthea stdout/stderr if files are missing
+            print("Synthea output directory does not exist:", csv_dir)
         if not all(os.path.exists(f) for f in required_files):
             print("Synthea stdout:\n", result.stdout)
             print("Synthea stderr:\n", result.stderr)
@@ -107,18 +106,18 @@ def load_synthea_patients():
     patients = pd.read_csv(patients_csv)
     medications = pd.read_csv(medications_csv)
     conditions = pd.read_csv(conditions_csv)
-    careplans_csv = os.path.join(OUTPUT_CSV_DIR, 'careplans.csv')
+    careplans_csv = os.path.join(csv_dir, 'careplans.csv')
     if os.path.exists(careplans_csv):
         careplans = pd.read_csv(careplans_csv)
     else:
         careplans = pd.DataFrame()
     return patients, medications, conditions, careplans
 
-def get_random_patient_with_meds(gender=None, min_age=None, max_age=None, modules=None, reference_date=None):
+def get_random_patient_with_meds(gender=None, min_age=None, max_age=None, modules=None, reference_date=None, synthea_csv_dir=None):
     """Get a random patient and their medications from Synthea data, with demographic and module filtering."""
     import numpy as np
     from datetime import datetime
-    patients, medications, conditions, careplans = load_synthea_patients()
+    patients, medications, conditions, careplans = load_synthea_patients(synthea_csv_dir=synthea_csv_dir)
     filtered_patients = patients.copy()
     # Gender filter (accepts 'F', 'M', 'female', 'male', case-insensitive)
     if gender:

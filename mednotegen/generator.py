@@ -6,14 +6,15 @@ import os
 import yaml
 
 class NoteGenerator:
-    def __init__(self, use_llm: bool = False, gender=None, min_age=None, max_age=None, modules=None, reference_date=None):
+    def __init__(self, use_llm: bool = False, gender=None, min_age=None, max_age=None, modules=None, reference_date=None, synthea_csv_dir=None):
         self.use_llm = use_llm
         self.gender = gender
         self.min_age = min_age
         self.max_age = max_age
         self.modules = modules
         self.reference_date = reference_date
-        self.template = PatientReportTemplate(gender=gender, min_age=min_age, max_age=max_age, modules=modules, reference_date=reference_date)
+        self.synthea_csv_dir = synthea_csv_dir
+        self.template = PatientReportTemplate(gender=gender, min_age=min_age, max_age=max_age, modules=modules, reference_date=reference_date, synthea_csv_dir=synthea_csv_dir)
         self.llm = LLMGenerator() if use_llm else None
 
     @classmethod
@@ -27,6 +28,7 @@ class NoteGenerator:
             max_age=config.get('max_age', None),
             modules=config.get('modules', None),
             reference_date=config.get('reference_date', None),
+            synthea_csv_dir=config.get('synthea_csv_dir', None)
         )
 
     def generate_note_data(self):

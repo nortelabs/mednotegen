@@ -11,6 +11,18 @@ from mednotegen.generator import NoteGenerator
 
 gen = NoteGenerator.from_config("config.yaml")
 gen.generate_notes(10, "output_dir")
+
+# Or specify Synthea CSV directory directly:
+gen = NoteGenerator(synthea_csv_dir="/path/to/synthea/output/csv")
+gen.generate_notes(10, "output_dir")
+```
+
+### CLI Usage
+
+You can also specify the Synthea CSV directory via the CLI:
+
+```sh
+mednotegen --count 10 --output output_dir --synthea-csv-dir /path/to/synthea/output/csv
 ```
 
 
@@ -43,6 +55,7 @@ You can customize patient generation and report output using a `config.yaml` fil
 count: 10                    # Number of reports to generate
 output_dir: output_dir       # Output directory for PDFs
 use_llm: false               # Use LLM for report generation
+synthea_csv_dir: /path/to/synthea/output/csv   # <--- NEW: Path to Synthea-generated CSV files
 seed: 1234                   # Random seed for reproducibility
 reference_date: "20250628"   # Reference date for data generation (YYYYMMDD)
 clinician_seed: 5678         # Optional: separate seed for clinician assignment
@@ -78,6 +91,12 @@ local_modules: ./synthea_modules         # Directory for custom modules
 For an up-to-date and complete list of available modules, see the [official Synthea modules directory](https://github.com/synthetichealth/synthea/tree/master/src/main/resources/modules).
 
 ---
+
+## Troubleshooting: Synthea Data Location
+
+If you see errors about missing `patients.csv`, `medications.csv`, or `conditions.csv`, make sure you have generated Synthea data and that the path you provide (via `synthea_csv_dir`, CLI, or config) points to the correct directory containing those files.
+
+If you installed `mednotegen` via pip, the default location is inside the package directory. For custom or system-wide Synthea runs, always specify the output CSV directory explicitly.
 
 ### Attribution
 
