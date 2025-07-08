@@ -1,10 +1,41 @@
 # mednotegen
 
-## Synthea Integration for Synthetic Health Data
-
 This project uses [Synthea™](https://github.com/synthetichealth/synthea) to generate realistic synthetic patient data for doctor notes and reports.
 
 ---
+
+## Example Use Cases
+
+### 1. Generate Reports from the Command Line
+
+After installing your package (e.g., `pip install -e .`), you can generate reports via the CLI:
+
+```sh
+mednotegen --count 5 --output output_dir
+```
+Or with a config file:
+```sh
+mednotegen --config config.yaml
+```
+
+### 2. Use as a Python Module
+
+You can also generate reports programmatically from Python:
+
+```python
+from mednotegen.generator import NoteGenerator
+
+gen = NoteGenerator(count=3, output_dir="output_dir")
+gen.generate_notes(3, "output_dir")
+```
+Or using a config file:
+```python
+from mednotegen.generator import NoteGenerator
+
+gen = NoteGenerator.from_config("config.yaml")
+gen.generate_notes(10, "output_dir")
+```
+
 
 ## ⚠️ Synthea Dependency Required
 
@@ -26,9 +57,6 @@ This project requires [Synthea™](https://github.com/synthetichealth/synthea), 
    Ensure `synthea-with-dependencies.jar` is in the `synthea/` directory at the root of your project.
 
 ---
-
-
-
 
 ## Configuration (`config.yaml`)
 
@@ -72,50 +100,7 @@ local_modules: ./synthea_modules         # Directory for custom modules
 ### More Synthea Modules
 For an up-to-date and complete list of available modules, see the [official Synthea modules directory](https://github.com/synthetichealth/synthea/tree/master/src/main/resources/modules).
 
-## Example Use Cases
 
-### 1. Generate Reports from the Command Line
-
-After installing your package (e.g., `pip install -e .`), you can generate reports via the CLI:
-
-```sh
-mednotegen --count 5 --output output_dir
-```
-Or with a config file:
-```sh
-mednotegen --config config.yaml
-```
-
-### 2. Use as a Python Module
-
-You can also generate reports programmatically from Python:
-
-```python
-from mednotegen.generator import NoteGenerator
-
-gen = NoteGenerator(count=3, output_dir="output_dir")
-gen.generate_notes(3, "output_dir")
-```
-Or using a config file:
-```python
-from mednotegen.generator import NoteGenerator
-
-gen = NoteGenerator.from_config("config.yaml")
-gen.generate_notes(10, "output_dir")
-```
-
-### 3. Generate a Single Patient Report as Text
-
-If you want to get a single report as a list of lines (instead of PDF):
-
-```python
-from mednotegen.templates import PatientReportTemplate
-
-template = PatientReportTemplate(gender="female", min_age=30, max_age=60)
-lines = template.generate()["lines"]
-for line in lines:
-    print(line)
-```
 
 
 ---
